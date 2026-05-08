@@ -116,6 +116,7 @@ export const selectAccessToken = (state) => state.auth.accessToken;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectUserRole = (state) => state.auth.user?.role;
 export const selectUserMentorId = (state) => state.auth.user?.mentorId;
+export const selectUserLevel = (state) => state.auth.user?.level;
 export const selectIsLoading = (state) => state.auth.isLoading;
 export const selectAuthError = (state) => state.auth.error;
 

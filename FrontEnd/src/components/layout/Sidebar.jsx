@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Building2, LayoutDashboard, Users, FileText, Calendar, Network, ShieldAlert, Bell, UserCircle, Target, UsersRound } from 'lucide-react';
-import { selectUserRole, selectUserMentorId } from '../../store/slices/authSlice';
+import { selectUserRole, selectUserMentorId, selectUserLevel } from '../../store/slices/authSlice';
 
 const Sidebar = () => {
   const role = useSelector(selectUserRole);
   const mentorId = useSelector(selectUserMentorId);
+  const userLevel = useSelector(selectUserLevel);
 
   const getNavItems = () => {
     const baseItems = [
@@ -35,9 +36,10 @@ const Sidebar = () => {
       if (mentorId) {
         employeeItems.push({ label: 'My MBOs', path: '/mbo', icon: Target });
       }
-      // Assuming 'isMentor' could be checked via another attribute, but we'll show it universally for employees to match 'My Mentees' spec or verify hasMentees. 
-      // For now, let's keep it visible or rely on a state variable. The spec says "visible only if they have mentees". We can just show it for now, and handle inside the route or with real data.
-      employeeItems.push({ label: 'My Mentees', path: '/mentees', icon: UsersRound });
+      // Only show 'My Mentees' for employees who can actually be mentors (mid, senior, lead)
+      if (userLevel && userLevel !== 'junior') {
+        employeeItems.push({ label: 'My Mentees', path: '/mentees', icon: UsersRound });
+      }
       
       return employeeItems;
     }

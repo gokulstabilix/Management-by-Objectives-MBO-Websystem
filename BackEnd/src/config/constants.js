@@ -34,8 +34,8 @@ const LEVEL_HIERARCHY = Object.freeze({
  * Key = mentor level, Value = array of levels they can mentor.
  */
 const VALID_MENTOR_PAIRINGS = Object.freeze({
-  lead: ['senior'],
-  senior: ['mid'],
+  lead: ['senior', 'mid', 'junior'],
+  senior: ['mid', 'junior'],
   mid: ['junior'],
   junior: [],
 });
