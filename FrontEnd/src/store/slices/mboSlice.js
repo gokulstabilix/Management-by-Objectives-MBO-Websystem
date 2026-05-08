@@ -35,6 +35,18 @@ export const fetchMyFormsThunk = createAsyncThunk(
   }
 );
 
+export const fetchFormByIdThunk = createAsyncThunk(
+  'mbo/fetchFormById',
+  async (formId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/mbo/${formId}`);
+      return response.data.data.form;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch MBO form');
+    }
+  }
+);
+
 export const createDraftThunk = createAsyncThunk(
   'mbo/createDraft',
   async ({ quarterId, objectives }, { rejectWithValue }) => {
@@ -164,6 +176,27 @@ const mboSlice = createSlice({
     });
     builder.addCase(fetchMyFormsThunk.rejected, (state, action) => {
       state.isLoading = false;
+      state.error = action.payload;
+    });
+
+    // fetchFormById (direct single-form fetch)
+    builder.addCase(fetchFormByIdThunk.pending, (state) => {
+      state.isLoadingForm = true;
+      state.error = null;
+    });
+    builder.addCase(fetchFormByIdThunk.fulfilled, (state, action) => {
+      state.isLoadingForm = false;
+      state.selectedForm = action.payload;
+      // Also add/update in myForms list if not present
+      const idx = state.myForms.findIndex((f) => f._id === action.payload._id);
+      if (idx !== -1) {
+        state.myForms[idx] = action.payload;
+      } else {
+        state.myForms.unshift(action.payload);
+      }
+    });
+    builder.addCase(fetchFormByIdThunk.rejected, (state, action) => {
+      state.isLoadingForm = false;
       state.error = action.payload;
     });
 

@@ -121,6 +121,17 @@ class MboFormService {
     return mboFormRepository.findByEmployee(employeeId);
   }
 
+  /** Get a single form by ID for the owning employee. */
+  async getFormById(formId, employeeId) {
+    const form = await mboFormRepository.findByIdFull(formId);
+    if (!form) throw new AppError('MBO form not found.', 404);
+    const formEmpId = form.employeeId?._id || form.employeeId;
+    if (formEmpId.toString() !== employeeId.toString()) {
+      throw new AppError('Access denied.', 403);
+    }
+    return form;
+  }
+
   /** Mentor's mentee forms. */
   async getMenteeForms(mentorId) {
     const mentees = await userRepository.findMentees(mentorId);

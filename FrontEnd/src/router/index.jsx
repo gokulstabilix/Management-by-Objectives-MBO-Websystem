@@ -67,8 +67,8 @@ export const router = createBrowserRouter([
             element: <RoleRoute allowedRoles={['employee']} />,
             children: [
               { path: 'mbo', element: <MboListPage /> },
-              { path: 'mbo/:id', element: <MboFormPage /> },
               { path: 'mbo/new', element: <MboFormPage /> },
+              { path: 'mbo/:id', element: <MboFormPage /> },
               
               // Mentee views (Employee acting as mentor)
               { path: 'mentees', element: <MenteesListPage /> },

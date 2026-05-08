@@ -39,9 +39,11 @@ const MentorMapPage = () => {
     }
   }, [selectedEmployee]);
 
-  // Potential mentors: Lead level users (excluding the selected employee)
+  // Potential mentors: Lead / Senior level users (excluding the selected employee)
+  // Note: DB stores levels as lowercase (lead, senior, mid, junior)
+  const isEmployeesLoading = useSelector((state) => state.employees.isLoading);
   const potentialMentors = allEmployees.filter(
-    emp => ['Lead', 'Senior'].includes(emp.level) && emp._id !== selectedEmployee?._id && emp.isActive
+    emp => ['lead', 'senior'].includes(emp.level) && emp._id !== selectedEmployee?._id && emp.isActive !== false
   );
 
   const filteredMappings = mappings.filter(emp => {
@@ -230,18 +232,29 @@ const MentorMapPage = () => {
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                         Select Mentor (Senior / Lead Level)
                       </label>
-                      <select
-                        className="w-full border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 text-sm"
-                        value={selectedMentorId}
-                        onChange={e => setSelectedMentorId(e.target.value)}
-                      >
-                        <option value="">— Search and select a mentor —</option>
-                        {potentialMentors.map(m => (
-                          <option key={m._id} value={m._id}>
-                            {m.name} ({m.level}{m.department ? `, ${m.department}` : ''})
-                          </option>
-                        ))}
-                      </select>
+                      {isEmployeesLoading ? (
+                        <div className="flex items-center gap-2 py-3 px-3 border border-gray-200 rounded-md bg-gray-50">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                          <span className="text-sm text-gray-500">Loading available mentors...</span>
+                        </div>
+                      ) : potentialMentors.length === 0 ? (
+                        <div className="py-3 px-3 border border-orange-200 rounded-md bg-orange-50 text-sm text-orange-700">
+                          No eligible mentors available. Mentors must be active employees at Senior or Lead level.
+                        </div>
+                      ) : (
+                        <select
+                          className="w-full border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 text-sm"
+                          value={selectedMentorId}
+                          onChange={e => setSelectedMentorId(e.target.value)}
+                        >
+                          <option value="">— Search and select a mentor ({potentialMentors.length} available) —</option>
+                          {potentialMentors.map(m => (
+                            <option key={m._id} value={m._id}>
+                              {m.name} ({m.level}{m.department ? `, ${m.department}` : ''})
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <p className="text-xs text-gray-500 mt-2">
                         Mentors must be at Senior or Lead level.
                       </p>

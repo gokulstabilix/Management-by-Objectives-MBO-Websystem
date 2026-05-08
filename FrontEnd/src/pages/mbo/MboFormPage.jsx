@@ -7,9 +7,9 @@ import * as z from 'zod';
 import { Plus, Trash2, Info, CheckCircle2, AlertCircle, Save, Send, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
-  fetchMyFormsThunk, createDraftThunk, updateDraftThunk,
+  fetchMyFormsThunk, fetchFormByIdThunk, createDraftThunk, updateDraftThunk,
   submitFormThunk, resubmitFormThunk,
-  selectMyForms, selectMboSubmitting, selectMboError, clearMboError,
+  selectMyForms, selectMboSubmitting, selectMboError, selectMboFormLoading, clearMboError,
 } from '../../store/slices/mboSlice';
 import { fetchQuartersThunk, selectActiveQuarter } from '../../store/slices/quarterSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
@@ -52,17 +52,19 @@ const mapFormToApi = (objectives = []) =>
 
 const MboFormPage = () => {
   const { id } = useParams(); // 'new' or a form _id
-  const isNew = id === 'new';
+  const isNew = id === 'new' || !id;
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const myForms = useSelector(selectMyForms);
   const activeQuarter = useSelector(selectActiveQuarter);
   const isSubmitting = useSelector(selectMboSubmitting);
+  const isFormLoading = useSelector(selectMboFormLoading);
   const apiError = useSelector(selectMboError);
 
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [form, setForm] = useState(null); // The current MBO form from state
+  const [formFetchAttempted, setFormFetchAttempted] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -76,13 +78,23 @@ const MboFormPage = () => {
     init();
   }, [dispatch]);
 
-  // Once myForms loads, find the current form
+  // Once myForms loads, find the current form; if not found, fetch directly by ID
   useEffect(() => {
-    if (!isNew && myForms.length > 0) {
-      const found = myForms.find(f => f._id === id);
-      setForm(found || null);
+    if (isNew || isPageLoading) return;
+
+    const found = myForms.find(f => f._id === id);
+    if (found) {
+      setForm(found);
+    } else if (!formFetchAttempted) {
+      // Form not in cached list — fetch directly from API
+      setFormFetchAttempted(true);
+      dispatch(fetchFormByIdThunk(id)).then((result) => {
+        if (!result.error && result.payload) {
+          setForm(result.payload);
+        }
+      });
     }
-  }, [id, isNew, myForms]);
+  }, [id, isNew, isPageLoading, myForms, formFetchAttempted, dispatch]);
 
   const formStatus = form?.status || (isNew ? 'draft' : null);
   const mentorComment = form?.mentorReview?.comment;
@@ -169,7 +181,7 @@ const MboFormPage = () => {
     }
   };
 
-  if (isPageLoading) {
+  if (isPageLoading || isFormLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -178,10 +190,13 @@ const MboFormPage = () => {
     );
   }
 
-  if (!isNew && !form) {
+  if (!isNew && !form && formFetchAttempted) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 font-medium">Form not found.</p>
+        <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">
+          {apiError || 'Form not found. It may have been deleted or you may not have access.'}
+        </p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/mbo')}>Back to My Forms</Button>
       </div>
     );

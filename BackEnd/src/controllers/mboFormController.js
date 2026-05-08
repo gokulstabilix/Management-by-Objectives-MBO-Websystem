@@ -32,6 +32,11 @@ exports.getMyForms = catchAsync(async (req, res) => {
   res.status(200).json({ status: 'success', data: { forms } });
 });
 
+exports.getFormById = catchAsync(async (req, res) => {
+  const form = await mboFormService.getFormById(req.params.id, req.user._id);
+  res.status(200).json({ status: 'success', data: { form } });
+});
+
 exports.getMenteeForms = catchAsync(async (req, res) => {
   const forms = await mboFormService.getMenteeForms(req.user._id);
   res.status(200).json({ status: 'success', data: { forms } });

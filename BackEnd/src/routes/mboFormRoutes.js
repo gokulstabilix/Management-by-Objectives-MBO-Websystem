@@ -21,6 +21,9 @@ router.get('/my', authorize('employee'), mboFormController.getMyForms);
 router.get('/mentees', authorize('employee'), mboFormController.getMenteeForms);
 router.get('/mentees/:formId', authorize('employee'), mboFormController.getMenteeFormDetail);
 
+// ── Employee: fetch single form by ID ──
+router.get('/:id', authorize('employee'), mboFormController.getFormById);
+
 // ── Admin/HR: status-only view ──
 router.get('/', authorize('admin', 'hr'), mboFormController.listForAdmin);
 
