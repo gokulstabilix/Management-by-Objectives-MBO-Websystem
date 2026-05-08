@@ -162,17 +162,25 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               {activeQuarter ? (
+                (() => {
+                  const openedDate = new Date(activeQuarter.openedAt);
+                  const now = new Date();
+                  const elapsedDays = Math.floor((now - openedDate) / (1000 * 60 * 60 * 24));
+                  const quarterDurationDays = 90;
+                  const progressPct = Math.min(100, Math.round((elapsedDays / quarterDurationDays) * 100));
+                  return (
                 <>
                   <div>
                     <div className="flex justify-between text-sm font-medium mb-2">
                       <span className="text-gray-700">Opened</span>
                       <span className="text-indigo-600 font-bold">
-                        {new Date(activeQuarter.openedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {openedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '70%' }}></div>
+                      <div className="bg-indigo-600 h-2.5 rounded-full transition-all" style={{ width: `${progressPct}%` }}></div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">{elapsedDays} day{elapsedDays !== 1 ? 's' : ''} elapsed</p>
                   </div>
 
                   <ul className="space-y-3 text-sm">
@@ -199,6 +207,8 @@ const AdminDashboard = () => {
                     Close Quarter
                   </Button>
                 </>
+                  );
+                })()
               ) : (
                 <div className="text-center py-4 text-gray-500 text-sm">
                   <p>No active quarter.</p>

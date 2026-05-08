@@ -14,7 +14,7 @@ export const fetchNotificationsThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/notifications');
-      return response.data; // expects { list: [], unreadCount: 0 }
+      return response.data.data; // { notifications: [], unreadCount: N }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch notifications');
     }
@@ -85,8 +85,8 @@ const notificationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(fetchNotificationsThunk.fulfilled, (state, action) => {
-      state.list = action.payload.list || [];
-      state.recent = (action.payload.list || []).slice(0, 5);
+      state.list = action.payload.notifications || [];
+      state.recent = (action.payload.notifications || []).slice(0, 5);
       state.unreadCount = action.payload.unreadCount || 0;
     });
     builder.addCase(markReadThunk.fulfilled, (state, action) => {

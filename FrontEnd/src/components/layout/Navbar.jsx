@@ -3,8 +3,23 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, User, Settings } from 'lucide-react';
 import { selectUser, logoutThunk } from '../../store/slices/authSlice';
-import { selectUnreadCount, selectRecentNotifications, markAllReadLocal } from '../../store/slices/notificationSlice';
+import { selectUnreadCount, selectRecentNotifications, markAllReadThunk } from '../../store/slices/notificationSlice';
 import Avatar from '../ui/Avatar';
+
+const timeAgo = (dateStr) => {
+  if (!dateStr) return '';
+  const now = new Date();
+  const date = new Date(dateStr);
+  const seconds = Math.floor((now - date) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -23,8 +38,7 @@ const Navbar = () => {
   };
 
   const handleMarkAllRead = () => {
-    // Ideally dispatches markAllReadThunk
-    dispatch(markAllReadLocal());
+    dispatch(markAllReadThunk());
   };
 
   return (
@@ -65,7 +79,7 @@ const Navbar = () => {
                     <div key={notif._id} className={`px-4 py-3 hover:bg-gray-50 flex gap-3 ${!notif.isRead ? 'bg-indigo-50/50' : ''}`}>
                       <div className="flex-1">
                         <p className="text-sm text-gray-800">{notif.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">Just now</p>
+                        <p className="text-xs text-gray-500 mt-1">{timeAgo(notif.createdAt)}</p>
                       </div>
                       {!notif.isRead && <div className="h-2 w-2 rounded-full bg-indigo-600 mt-1"></div>}
                     </div>
