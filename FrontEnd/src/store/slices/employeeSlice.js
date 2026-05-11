@@ -69,14 +69,14 @@ export const updateEmployeeThunk = createAsyncThunk(
   }
 );
 
-export const deactivateEmployeeThunk = createAsyncThunk(
-  'employees/deactivate',
+export const deleteEmployeeThunk = createAsyncThunk(
+  'employees/delete',
   async (id, { rejectWithValue }) => {
     try {
-      await api.patch(`/users/${id}/deactivate`);
+      await api.delete(`/users/${id}`);
       return id;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to deactivate employee');
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete employee');
     }
   }
 );
@@ -141,13 +141,10 @@ const employeeSlice = createSlice({
       }
     });
 
-    // deactivate
-    builder.addCase(deactivateEmployeeThunk.fulfilled, (state, action) => {
-      const idx = state.list.findIndex((e) => e._id === action.payload);
-      if (idx !== -1) state.list[idx].isActive = false;
-      if (state.selectedEmployee?.user?._id === action.payload) {
-        state.selectedEmployee.user.isActive = false;
-      }
+    // delete — remove employee from list entirely
+    builder.addCase(deleteEmployeeThunk.fulfilled, (state, action) => {
+      state.list = state.list.filter((e) => e._id !== action.payload);
+      state.total = Math.max(0, state.total - 1);
     });
   },
 });

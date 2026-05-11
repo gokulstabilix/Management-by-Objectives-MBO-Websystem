@@ -9,6 +9,8 @@ const Badge = forwardRef(({ className = '', variant = 'default', children, ...pr
     danger: 'bg-red-100 text-red-800 border-red-200',
     purple: 'bg-purple-100 text-purple-800 border-purple-200',
     blue: 'bg-blue-100 text-blue-800 border-blue-200',
+    teal: 'bg-teal-100 text-teal-800 border-teal-200',
+    orange: 'bg-orange-100 text-orange-800 border-orange-200',
   };
 
   return (

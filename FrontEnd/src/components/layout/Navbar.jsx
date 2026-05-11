@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, User, Settings } from 'lucide-react';
 import { selectUser, logoutThunk } from '../../store/slices/authSlice';
-import { selectUnreadCount, selectRecentNotifications, markAllReadThunk } from '../../store/slices/notificationSlice';
+import { selectRecentNotifications } from '../../store/slices/notificationSlice';
 import Avatar from '../ui/Avatar';
 
 const timeAgo = (dateStr) => {
@@ -26,7 +26,6 @@ const Navbar = () => {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   
   const user = useSelector(selectUser);
-  const unreadCount = useSelector(selectUnreadCount);
   const recentNotifications = useSelector(selectRecentNotifications);
   
   const dispatch = useDispatch();
@@ -35,10 +34,6 @@ const Navbar = () => {
   const handleLogout = async () => {
     await dispatch(logoutThunk());
     navigate('/login');
-  };
-
-  const handleMarkAllRead = () => {
-    dispatch(markAllReadThunk());
   };
 
   return (
@@ -58,30 +53,21 @@ const Navbar = () => {
             }}
           >
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-            )}
           </button>
 
           {showNotifMenu && (
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-100 py-2">
-              <div className="px-4 py-2 border-b flex justify-between items-center">
+              <div className="px-4 py-2 border-b">
                 <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-                {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} className="text-xs text-indigo-600 hover:underline">
-                    Mark all read
-                  </button>
-                )}
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {recentNotifications?.length > 0 ? (
                   recentNotifications.map(notif => (
-                    <div key={notif._id} className={`px-4 py-3 hover:bg-gray-50 flex gap-3 ${!notif.isRead ? 'bg-indigo-50/50' : ''}`}>
+                    <div key={notif._id} className="px-4 py-3 hover:bg-gray-50 flex gap-3">
                       <div className="flex-1">
                         <p className="text-sm text-gray-800">{notif.message}</p>
                         <p className="text-xs text-gray-500 mt-1">{timeAgo(notif.createdAt)}</p>
                       </div>
-                      {!notif.isRead && <div className="h-2 w-2 rounded-full bg-indigo-600 mt-1"></div>}
                     </div>
                   ))
                 ) : (
@@ -92,7 +78,7 @@ const Navbar = () => {
               </div>
               <div className="px-4 py-2 border-t text-center">
                 <Link to="/notifications" className="text-sm text-indigo-600 hover:underline" onClick={() => setShowNotifMenu(false)}>
-                  View all notifications
+                  View all notifications →
                 </Link>
               </div>
             </div>

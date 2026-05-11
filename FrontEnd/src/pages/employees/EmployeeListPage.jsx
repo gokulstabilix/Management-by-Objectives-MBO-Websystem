@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Search, Edit, UserX, UserPlus, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Edit, Trash2, UserPlus, X, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { selectUserRole } from '../../store/slices/authSlice';
 import {
-  fetchEmployeesThunk, deactivateEmployeeThunk, createEmployeeThunk,
+  fetchEmployeesThunk, deleteEmployeeThunk, createEmployeeThunk,
   selectEmployees, selectEmployeesLoading, selectEmployeeTotal,
   selectEmployeePage, selectEmployeePages,
 } from '../../store/slices/employeeSlice';
@@ -20,6 +20,65 @@ const StatusDot = ({ isActive }) => (
     <span className="text-sm text-gray-600">{isActive ? 'Active' : 'Inactive'}</span>
   </span>
 );
+
+// ── Delete Confirmation Modal ─────────────────────────────────────────────────
+const DeleteEmployeeModal = ({ employee, onClose, onConfirm, isDeleting }) => {
+  const [confirmName, setConfirmName] = useState('');
+  const nameMatches = confirmName.trim().toLowerCase() === (employee?.name || '').trim().toLowerCase();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-full">
+            <Trash2 className="h-5 w-5 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900">Delete Employee?</h3>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-700">
+            You are about to permanently delete <strong>{employee?.name}</strong>.
+            This action cannot be undone.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800">
+              <strong>Warning:</strong> All associated data including mentor mappings will be removed.
+              MBO form history will be retained for audit purposes.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type the employee name to confirm:
+            </label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={employee?.name}
+              autoFocus
+            />
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t flex justify-end gap-3 bg-gray-50">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+            disabled={!nameMatches || isDeleting}
+            isLoading={isDeleting}
+            onClick={() => onConfirm(employee._id)}
+          >
+            Delete Permanently
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Simple Add Employee Modal
 const AddEmployeeModal = ({ onClose, onSave, isSaving }) => {
@@ -107,6 +166,8 @@ const EmployeeListPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadEmployees = useCallback(() => {
     const params = { page: currentPage, limit: 10 };
@@ -124,15 +185,20 @@ const EmployeeListPage = () => {
     setCurrentPage(1);
   }, [searchTerm, levelFilter]);
 
-  const handleDeactivate = async (e, id, name) => {
+  const handleDeleteClick = (e, emp) => {
     e.stopPropagation();
-    if (window.confirm(`Deactivate ${name}? They will lose access to the system.`)) {
-      const result = await dispatch(deactivateEmployeeThunk(id));
-      if (!result.error) {
-        toast.success(`${name} has been deactivated.`);
-      } else {
-        toast.error(result.payload || 'Failed to deactivate user');
-      }
+    setDeleteTarget(emp);
+  };
+
+  const handleDeleteConfirm = async (id) => {
+    setIsDeleting(true);
+    const result = await dispatch(deleteEmployeeThunk(id));
+    setIsDeleting(false);
+    if (!result.error) {
+      toast.success('Employee deleted successfully');
+      setDeleteTarget(null);
+    } else {
+      toast.error('Failed to delete. Try again.');
     }
   };
 
@@ -258,15 +324,13 @@ const EmployeeListPage = () => {
                             >
                               <Edit className="h-4 w-4" />
                             </button>
-                            {emp.isActive && (
-                              <button
-                                className="text-gray-400 hover:text-red-600 p-1"
-                                title="Deactivate"
-                                onClick={(e) => handleDeactivate(e, emp._id, emp.name)}
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
-                            )}
+                            <button
+                              className="text-gray-400 hover:text-red-600 p-1"
+                              title="Delete"
+                              onClick={(e) => handleDeleteClick(e, emp)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </td>
                       )}
@@ -309,6 +373,15 @@ const EmployeeListPage = () => {
           onClose={() => setIsAddModalOpen(false)}
           onSave={handleAddEmployee}
           isSaving={isSaving}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteEmployeeModal
+          employee={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+          isDeleting={isDeleting}
         />
       )}
     </div>

@@ -85,18 +85,17 @@ class UserService {
   }
 
   /**
-   * Deactivate a user account (Admin only).
+   * Delete a user account (Admin only).
    */
-  async deactivateUser(userId, requestingUserId) {
+  async deleteUser(userId, requestingUserId) {
     if (userId === requestingUserId.toString()) {
-      throw new AppError('You cannot deactivate your own account.', 400);
+      throw new AppError('You cannot delete your own account.', 400);
     }
 
     const user = await userRepository.findById(userId);
     if (!user) throw new AppError('User not found.', 404);
-    if (!user.isActive) throw new AppError('User is already deactivated.', 400);
 
-    return userRepository.updateById(userId, { isActive: false });
+    return userRepository.deleteById(userId);
   }
 }
 

@@ -29,6 +29,22 @@ const objectiveSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    accomplishment: {
+      type: String,
+      default: '',
+    },
+    managerComment: {
+      type: String,
+      default: '',
+    },
+    achievedPercent: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+    accomplished: {
+      type: Boolean,
+    },
   },
   { _id: false }
 );
@@ -84,6 +100,10 @@ const mboFormSchema = new mongoose.Schema(
       default: 0,
     },
     mentorReview: {
+      type: mentorReviewSchema,
+      default: null,
+    },
+    finalReview: {
       type: mentorReviewSchema,
       default: null,
     },

@@ -46,6 +46,11 @@ const MBO_STATUS = Object.freeze({
   SUBMITTED: 'submitted',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  ACCOMPLISHMENT_DRAFT: 'accomplishment_draft',
+  ACCOMPLISHMENT_SUBMITTED: 'accomplishment_submitted',
+  FINAL_APPROVED: 'final_approved',
+  FINAL_REJECTED: 'final_rejected',
+  COMPLETE: 'complete',
   FROZEN: 'frozen',
 });
 
@@ -56,15 +61,20 @@ const STATE_TRANSITIONS = Object.freeze({
   draft: { submit: 'submitted', freeze: 'frozen' },
   submitted: { approve: 'approved', reject: 'rejected', freeze: 'frozen' },
   rejected: { resubmit: 'submitted', freeze: 'frozen' },
-  approved: {},   // terminal
+  approved: { start_accomplishments: 'accomplishment_draft', freeze: 'frozen' },
+  accomplishment_draft: { submit_accomplishments: 'accomplishment_submitted', freeze: 'frozen' },
+  accomplishment_submitted: { final_approve: 'final_approved', final_reject: 'final_rejected', freeze: 'frozen' },
+  final_rejected: { resubmit_accomplishments: 'accomplishment_submitted', freeze: 'frozen' },
+  final_approved: { mark_complete: 'complete', freeze: 'frozen' },
+  complete: { freeze: 'frozen' },
   frozen: {},     // terminal
 });
 
 /** Which roles can perform which state-machine actions */
 const ROLE_ACTIONS = Object.freeze({
-  employee: ['submit', 'resubmit'],
-  mentor: ['approve', 'reject'],
-  system: ['freeze'],
+  employee: ['submit', 'resubmit', 'start_accomplishments', 'submit_accomplishments', 'resubmit_accomplishments'],
+  mentor: ['approve', 'reject', 'final_approve', 'final_reject'],
+  system: ['freeze', 'mark_complete'],
 });
 
 /** Quarter statuses */
@@ -90,6 +100,8 @@ const NOTIFICATION_TYPE_VALUES = Object.values(NOTIFICATION_TYPES);
 const REVIEW_DECISIONS = Object.freeze({
   APPROVE: 'approve',
   REJECT: 'reject',
+  FINAL_APPROVED: 'final_approved',
+  FINAL_REJECTED: 'final_rejected',
 });
 
 const REVIEW_DECISION_VALUES = Object.values(REVIEW_DECISIONS);

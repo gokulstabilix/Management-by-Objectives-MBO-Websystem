@@ -12,6 +12,6 @@ router.post('/', authorize('admin', 'hr'), validate(createUserSchema), userContr
 router.get('/', authorize('admin', 'hr'), userController.listUsers);
 router.get('/:id', authorize('admin', 'hr'), userController.getUser);
 router.patch('/:id', authorize('admin', 'hr'), validate(updateUserSchema), userController.updateUser);
-router.patch('/:id/deactivate', authorize('admin'), userController.deactivateUser);
+router.delete('/:id', authorize('admin'), userController.deleteUser);
 
 module.exports = router;

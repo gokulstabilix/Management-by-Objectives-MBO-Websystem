@@ -6,10 +6,10 @@ const { assertTransition } = require('./statusTransitionGuard');
 const AppError = require('../utils/AppError');
 
 class MboFormService {
-  /** Ensure the form is not locked before any write. */
+  /** Ensure the form is not permanently locked. */
   _assertNotLocked(form) {
-    if (form.isLocked) {
-      throw new AppError('This form is approved and permanently locked. No edits allowed.', 403);
+    if (form.status === 'final_approved' || form.status === 'complete' || form.status === 'frozen') {
+      throw new AppError('This form is permanently locked. No edits allowed.', 403);
     }
   }
 
@@ -104,11 +104,112 @@ class MboFormService {
       mentorReview: { decision, comment, reviewedAt: new Date(), mentorId: mentorUserId },
     };
 
-    if (nextStatus === 'approved') updateData.isLocked = true;
+    if (nextStatus === 'approved') {
+      // Unset isLocked if it was somehow set
+      updateData.isLocked = false;
+    }
 
     const updated = await mboFormRepository.updateById(formId, updateData);
 
     if (decision === 'approve') {
+      await notificationService.notifyFormApproved(form.employeeId, formId);
+    } else {
+      await notificationService.notifyFormRejected(form.employeeId, formId);
+    }
+    return updated;
+  }
+
+  /** Save accomplishments (approved/accomplishment_draft/final_rejected → accomplishment_draft). */
+  async saveAccomplishments(formId, employeeId, accomplishmentsData) {
+    const form = await mboFormRepository.findById(formId);
+    if (!form) throw new AppError('MBO form not found.', 404);
+    if (form.employeeId.toString() !== employeeId.toString()) throw new AppError('Access denied.', 403);
+    this._assertNotLocked(form);
+
+    let nextStatus = form.status;
+    if (form.status === 'approved' || form.status === 'final_rejected') {
+      nextStatus = assertTransition(form.status, form.status === 'approved' ? 'start_accomplishments' : 'resubmit_accomplishments', 'employee');
+      // Actually, from final_rejected, if they are just saving, we don't move to accomplishment_submitted yet.
+      // We can just set status to accomplishment_draft.
+      if (form.status === 'final_rejected') nextStatus = 'accomplishment_draft';
+    }
+
+    // Map accomplishmentsData back into form.objectives
+    const newObjectives = form.objectives.map((obj, idx) => {
+      const match = accomplishmentsData.find(a => a.objectiveId === String(idx));
+      if (match) {
+        return { 
+          ...obj.toObject(), 
+          accomplishment: match.accomplishment,
+          accomplished: match.accomplished 
+        };
+      }
+      return obj;
+    });
+
+    return mboFormRepository.updateById(formId, { status: nextStatus, objectives: newObjectives });
+  }
+
+  /** Submit accomplishments (accomplishment_draft → accomplishment_submitted). */
+  async submitAccomplishments(formId, employeeId) {
+    const form = await mboFormRepository.findById(formId);
+    if (!form) throw new AppError('MBO form not found.', 404);
+    if (form.employeeId.toString() !== employeeId.toString()) throw new AppError('Access denied.', 403);
+    this._assertNotLocked(form);
+
+    const nextStatus = assertTransition(form.status, 'submit_accomplishments', 'employee');
+
+    const updated = await mboFormRepository.updateById(formId, {
+      status: nextStatus,
+    });
+
+    const employee = await userRepository.findById(employeeId);
+    if (employee && employee.mentorId) {
+      // You can notify here
+      // await notificationService.notifyFormSubmitted(employee.mentorId, employee.name, formId);
+    }
+    return updated;
+  }
+
+  /** Final Review by mentor (accomplishment_submitted → final_approved/final_rejected). */
+  async finalReview(formId, mentorUserId, decision, overallComment, objectivesData) {
+    const form = await mboFormRepository.findById(formId);
+    if (!form) throw new AppError('MBO form not found.', 404);
+    this._assertNotLocked(form);
+
+    const employee = await userRepository.findById(form.employeeId);
+    if (!employee || employee.mentorId.toString() !== mentorUserId.toString()) {
+      throw new AppError('You are not the mentor of this employee.', 403);
+    }
+
+    const action = decision === 'final_approved' ? 'final_approve' : 'final_reject';
+    const nextStatus = assertTransition(form.status, action, 'mentor');
+
+    const newObjectives = form.objectives.map((obj, idx) => {
+      const match = objectivesData.find(a => a.objectiveId === String(idx));
+      if (match) {
+        return {
+          ...obj.toObject(),
+          managerComment: match.managerComment,
+          achievedPercent: match.achievedPercent,
+        };
+      }
+      return obj;
+    });
+
+    const updateData = {
+      status: nextStatus,
+      objectives: newObjectives,
+      finalReview: { decision, comment: overallComment, reviewedAt: new Date(), mentorId: mentorUserId },
+    };
+
+    if (nextStatus === 'final_approved') {
+      updateData.isLocked = true;
+    }
+
+    const updated = await mboFormRepository.updateById(formId, updateData);
+
+    if (decision === 'final_approved') {
       await notificationService.notifyFormApproved(form.employeeId, formId);
     } else {
       await notificationService.notifyFormRejected(form.employeeId, formId);

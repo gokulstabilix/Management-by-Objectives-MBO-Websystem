@@ -25,8 +25,28 @@ const reviewMboSchema = z.object({
   comment: z.string().min(1, 'Comment is mandatory when reviewing'),
 });
 
+const saveAccomplishmentsSchema = z.object({
+  accomplishments: z.array(z.object({
+    objectiveId: z.string().min(1),
+    accomplishment: z.string().optional().default(''),
+    accomplished: z.boolean().optional(),
+  })),
+});
+
+const finalReviewMboSchema = z.object({
+  decision: z.enum(['final_approved', 'final_rejected']),
+  overallComment: z.string().min(1, 'Overall comment is mandatory'),
+  objectives: z.array(z.object({
+    objectiveId: z.string().min(1),
+    managerComment: z.string().optional().default(''),
+    achievedPercent: z.number().min(0).max(100).optional(),
+  })),
+});
+
 module.exports = {
   createMboSchema,
   updateMboSchema,
   reviewMboSchema,
+  saveAccomplishmentsSchema,
+  finalReviewMboSchema,
 };

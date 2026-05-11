@@ -21,7 +21,7 @@ exports.updateUser = catchAsync(async (req, res) => {
   res.status(200).json({ status: 'success', data: { user } });
 });
 
-exports.deactivateUser = catchAsync(async (req, res) => {
-  await userService.deactivateUser(req.params.id, req.user._id);
-  res.status(200).json({ status: 'success', message: 'User deactivated.' });
+exports.deleteUser = catchAsync(async (req, res) => {
+  await userService.deleteUser(req.params.id, req.user._id);
+  res.status(200).json({ status: 'success', message: 'User deleted.' });
 });

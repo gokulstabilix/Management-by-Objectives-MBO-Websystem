@@ -36,6 +36,10 @@ class UserRepository {
     });
   }
 
+  async deleteById(id) {
+    return User.findByIdAndDelete(id);
+  }
+
   async findMentees(mentorId) {
     return User.find({ mentorId, isActive: true });
   }

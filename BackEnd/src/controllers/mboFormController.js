@@ -27,6 +27,22 @@ exports.reviewForm = catchAsync(async (req, res) => {
   res.status(200).json({ status: 'success', data: { form } });
 });
 
+exports.saveAccomplishments = catchAsync(async (req, res) => {
+  const form = await mboFormService.saveAccomplishments(req.params.id, req.user._id, req.body.accomplishments);
+  res.status(200).json({ status: 'success', data: { form } });
+});
+
+exports.submitAccomplishments = catchAsync(async (req, res) => {
+  const form = await mboFormService.submitAccomplishments(req.params.id, req.user._id);
+  res.status(200).json({ status: 'success', data: { form } });
+});
+
+exports.finalReview = catchAsync(async (req, res) => {
+  const { decision, overallComment, objectives } = req.body;
+  const form = await mboFormService.finalReview(req.params.id, req.user._id, decision, overallComment, objectives);
+  res.status(200).json({ status: 'success', data: { form } });
+});
+
 exports.getMyForms = catchAsync(async (req, res) => {
   const forms = await mboFormService.getMyForms(req.user._id);
   res.status(200).json({ status: 'success', data: { forms } });

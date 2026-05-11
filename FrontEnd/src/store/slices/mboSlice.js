@@ -95,6 +95,32 @@ export const resubmitFormThunk = createAsyncThunk(
   }
 );
 
+// ── Thunks: Phase 2 (Accomplishments) ─────────────────────────────────────────
+
+export const saveAccomplishmentsThunk = createAsyncThunk(
+  'mbo/saveAccomplishments',
+  async ({ id, accomplishments }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/mbo/${id}/accomplishments`, { accomplishments });
+      return response.data.data.form;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save accomplishments');
+    }
+  }
+);
+
+export const submitAccomplishmentsThunk = createAsyncThunk(
+  'mbo/submitAccomplishments',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/mbo/${id}/accomplishments/submit`);
+      return response.data.data.form;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to submit accomplishments');
+    }
+  }
+);
+
 // ── Thunks: Mentor ────────────────────────────────────────────────────────────
 
 export const fetchMenteeFormsThunk = createAsyncThunk(
@@ -129,6 +155,23 @@ export const reviewFormThunk = createAsyncThunk(
       return response.data.data.form;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to submit review');
+    }
+  }
+);
+
+/** Phase 2 final review by mentor: includes per-objective scores and overall comment. */
+export const finalReviewThunk = createAsyncThunk(
+  'mbo/finalReview',
+  async ({ id, objectives, overallComment, decision }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/mbo/${id}/final-review`, {
+        objectives,
+        overallComment,
+        decision,
+      });
+      return response.data.data.form;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to submit final review');
     }
   }
 );
@@ -251,6 +294,28 @@ const mboSlice = createSlice({
       state.error = action.payload;
     });
 
+    // saveAccomplishments
+    builder.addCase(saveAccomplishmentsThunk.pending, (state) => {
+      state.isSubmitting = true;
+      state.error = null;
+    });
+    builder.addCase(saveAccomplishmentsThunk.fulfilled, handleFormUpdate);
+    builder.addCase(saveAccomplishmentsThunk.rejected, (state, action) => {
+      state.isSubmitting = false;
+      state.error = action.payload;
+    });
+
+    // submitAccomplishments
+    builder.addCase(submitAccomplishmentsThunk.pending, (state) => {
+      state.isSubmitting = true;
+      state.error = null;
+    });
+    builder.addCase(submitAccomplishmentsThunk.fulfilled, handleFormUpdate);
+    builder.addCase(submitAccomplishmentsThunk.rejected, (state, action) => {
+      state.isSubmitting = false;
+      state.error = action.payload;
+    });
+
     // fetchMenteeForms
     builder.addCase(fetchMenteeFormsThunk.pending, (state) => {
       state.isLoadingMenteeForms = true;
@@ -279,7 +344,7 @@ const mboSlice = createSlice({
       state.error = action.payload;
     });
 
-    // reviewForm
+    // reviewForm (Phase 1 review)
     builder.addCase(reviewFormThunk.pending, (state) => {
       state.isSubmitting = true;
       state.error = null;
@@ -292,6 +357,22 @@ const mboSlice = createSlice({
       state.selectedMenteeForm = action.payload;
     });
     builder.addCase(reviewFormThunk.rejected, (state, action) => {
+      state.isSubmitting = false;
+      state.error = action.payload;
+    });
+
+    // finalReview (Phase 2 review)
+    builder.addCase(finalReviewThunk.pending, (state) => {
+      state.isSubmitting = true;
+      state.error = null;
+    });
+    builder.addCase(finalReviewThunk.fulfilled, (state, action) => {
+      state.isSubmitting = false;
+      const idx = state.menteeForms.findIndex((f) => f._id === action.payload._id);
+      if (idx !== -1) state.menteeForms[idx] = action.payload;
+      state.selectedMenteeForm = action.payload;
+    });
+    builder.addCase(finalReviewThunk.rejected, (state, action) => {
       state.isSubmitting = false;
       state.error = action.payload;
     });

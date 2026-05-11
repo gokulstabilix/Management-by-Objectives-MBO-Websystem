@@ -10,9 +10,18 @@ import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import StatusBadge from '../../components/shared/StatusBadge';
 import LevelBadge from '../../components/shared/LevelBadge';
 import Button from '../../components/ui/Button';
+import { MBO_STATUSES } from '../../constants/mboStatuses';
 
-// Normalize status from backend (lowercase) to display format
-const fmt = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+/** Map status to a phase-aware display label for the mentees table. */
+const getPhaseLabel = (status) => {
+  switch (status) {
+    case MBO_STATUSES.SUBMITTED: return { text: 'Submitted (P1)', variant: 'blue' };
+    case MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED: return { text: 'Final Sheet', variant: 'orange' };
+    case MBO_STATUSES.COMPLETE:
+    case MBO_STATUSES.FINAL_APPROVED: return { text: 'Complete ✅', variant: 'success' };
+    default: return null; // use default StatusBadge
+  }
+};
 
 const MenteesListPage = () => {
   const dispatch = useDispatch();
@@ -23,7 +32,9 @@ const MenteesListPage = () => {
     dispatch(fetchMenteeFormsThunk());
   }, [dispatch]);
 
-  const pendingCount = menteeForms.filter(f => f.status === 'submitted').length;
+  const pendingCount = menteeForms.filter(f =>
+    f.status === MBO_STATUSES.SUBMITTED || f.status === MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED
+  ).length;
   const totalCount = menteeForms.length;
 
   if (isLoading) {
@@ -46,26 +57,16 @@ const MenteesListPage = () => {
         <Card className="bg-indigo-50 border-indigo-100">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-100 text-indigo-700 rounded-lg">
-                <Users className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-indigo-800">Total Mentee Forms</p>
-                <h3 className="text-2xl font-bold text-indigo-900">{totalCount}</h3>
-              </div>
+              <div className="p-3 bg-indigo-100 text-indigo-700 rounded-lg"><Users className="h-6 w-6" /></div>
+              <div><p className="text-sm font-medium text-indigo-800">Total Mentee Forms</p><h3 className="text-2xl font-bold text-indigo-900">{totalCount}</h3></div>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-orange-50 border-orange-100">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
-                <Clock className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-orange-800">Pending Reviews</p>
-                <h3 className="text-2xl font-bold text-orange-900">{pendingCount}</h3>
-              </div>
+              <div className="p-3 bg-orange-100 text-orange-700 rounded-lg"><Clock className="h-6 w-6" /></div>
+              <div><p className="text-sm font-medium text-orange-800">Pending Reviews</p><h3 className="text-2xl font-bold text-orange-900">{pendingCount}</h3></div>
             </div>
           </CardContent>
         </Card>
@@ -95,9 +96,10 @@ const MenteesListPage = () => {
                   {menteeForms.map((form) => {
                     const employee = form.employeeId;
                     const quarter = form.quarterId;
-                    const status = fmt(form.status);
                     const isResubmitted = form.submissionCount > 1;
-                    const needsReview = form.status === 'submitted';
+                    const needsP1Review = form.status === MBO_STATUSES.SUBMITTED;
+                    const needsP2Review = form.status === MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED;
+                    const needsReview = needsP1Review || needsP2Review;
 
                     return (
                       <tr key={form._id} className="hover:bg-gray-50 transition-colors">
@@ -115,18 +117,16 @@ const MenteesListPage = () => {
                         <td className="px-6 py-4 text-gray-600">{quarter?.label || '—'}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <StatusBadge status={status} />
+                            <StatusBadge status={form.status} />
                             {isResubmitted && (
-                              <span className="bg-orange-100 text-orange-800 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">
-                                Resubmitted
-                              </span>
+                              <span className="bg-orange-100 text-orange-800 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Resubmitted</span>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <Link to={`/mentees/${form._id}`}>
                             <Button size="sm" variant={needsReview ? 'primary' : 'secondary'}>
-                              {needsReview ? 'Review' : 'View'}
+                              {needsP1Review ? 'Review P1 →' : needsP2Review ? 'Review Final →' : 'View'}
                             </Button>
                           </Link>
                         </td>
