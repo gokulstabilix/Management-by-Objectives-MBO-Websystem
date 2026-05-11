@@ -1,15 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, useRef } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { router } from './router';
 import { refreshTokenThunk, selectIsAuthenticated, selectIsInitialized } from './store/slices/authSlice';
-import { fetchNotificationsThunk, setPollingId, clearPolling } from './store/slices/notificationSlice';
+import { fetchNotificationsThunk } from './store/slices/notificationSlice';
 
 function App() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isInitialized = useSelector(selectIsInitialized);
+  const pollingRef = useRef(null);
 
   // Rehydrate Session on Mount
   useEffect(() => {
@@ -24,15 +25,15 @@ function App() {
       dispatch(fetchNotificationsThunk());
       
       // Set up polling every 60 seconds
-      const id = setInterval(() => {
+      pollingRef.current = setInterval(() => {
         dispatch(fetchNotificationsThunk());
       }, 60000);
-      
-      dispatch(setPollingId(id));
 
       return () => {
-        clearInterval(id);
-        dispatch(clearPolling());
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
       };
     }
   }, [isAuthenticated, isInitialized, dispatch]);
@@ -47,9 +48,17 @@ function App() {
     );
   }
 
+  const PageLoader = () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+    </div>
+  );
+
   return (
     <>
-      <RouterProvider router={router} />
+      <Suspense fallback={<PageLoader />}>
+        <RouterProvider router={router} />
+      </Suspense>
       <Toaster 
         position="top-right" 
         toastOptions={{

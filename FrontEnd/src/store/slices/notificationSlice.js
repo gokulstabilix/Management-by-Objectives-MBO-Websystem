@@ -5,7 +5,6 @@ const initialState = {
   list: [],
   recent: [],
   isLoading: false,
-  pollingIntervalId: null,
 };
 
 export const fetchNotificationsThunk = createAsyncThunk(
@@ -30,15 +29,6 @@ const notificationSlice = createSlice({
     setRecent: (state, action) => {
       state.recent = action.payload;
     },
-    setPollingId: (state, action) => {
-      state.pollingIntervalId = action.payload;
-    },
-    clearPolling: (state) => {
-      if (state.pollingIntervalId) {
-        clearInterval(state.pollingIntervalId);
-        state.pollingIntervalId = null;
-      }
-    },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchNotificationsThunk.pending, (state) => {
@@ -58,8 +48,6 @@ const notificationSlice = createSlice({
 export const {
   setNotifications,
   setRecent,
-  setPollingId,
-  clearPolling,
 } = notificationSlice.actions;
 
 export const selectNotifications = (state) => state.notifications.list;

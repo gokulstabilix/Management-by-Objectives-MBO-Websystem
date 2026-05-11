@@ -15,7 +15,7 @@ import LevelBadge from '../../components/shared/LevelBadge';
 import StatusBadge from '../../components/shared/StatusBadge';
 import Button from '../../components/ui/Button';
 import { MBO_STATUSES } from '../../constants/mboStatuses';
-import { needsMentorPhase1Review, needsMentorPhase2Review } from '../../hooks/useMboForm';
+import { needsMentorPhase1Review, needsMentorPhase2Review } from '../../utils/mboFormHelpers';
 
 const mentorReviewSchema = z.object({ comment: z.string().min(10, 'A comment of at least 10 characters is required.') });
 

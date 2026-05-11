@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Search, Edit, Trash2, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { selectUserRole } from '../../store/slices/authSlice';
 import {
   fetchEmployeesThunk, deleteEmployeeThunk, createEmployeeThunk,
@@ -41,6 +42,8 @@ const EmployeeListPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,19 +52,19 @@ const EmployeeListPage = () => {
 
   const loadEmployees = useCallback(() => {
     const params = { page: currentPage, limit: 10 };
-    if (searchTerm) params.search = searchTerm;
+    if (debouncedSearchTerm) params.search = debouncedSearchTerm;
     if (levelFilter) params.level = levelFilter;
     dispatch(fetchEmployeesThunk(params));
-  }, [dispatch, currentPage, searchTerm, levelFilter]);
+  }, [dispatch, currentPage, debouncedSearchTerm, levelFilter]);
 
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
 
-  // Debounce search
+  // Reset to page 1 when search or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, levelFilter]);
+  }, [debouncedSearchTerm, levelFilter]);
 
   const handleDeleteClick = (e, emp) => {
     e.stopPropagation();
@@ -128,10 +131,10 @@ const EmployeeListPage = () => {
               onChange={(e) => setLevelFilter(e.target.value)}
             >
               <option value="">All Levels</option>
-              <option value="Junior">Junior</option>
-              <option value="Mid">Mid</option>
-              <option value="Senior">Senior</option>
-              <option value="Lead">Lead</option>
+              <option value="junior">Junior</option>
+              <option value="mid">Mid</option>
+              <option value="senior">Senior</option>
+              <option value="lead">Lead</option>
             </select>
           </div>
         </CardHeader>
