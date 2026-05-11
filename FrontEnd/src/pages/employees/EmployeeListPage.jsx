@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Search, Edit, Trash2, UserPlus, X, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Search, Edit, Trash2, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { selectUserRole } from '../../store/slices/authSlice';
 import {
   fetchEmployeesThunk, deleteEmployeeThunk, createEmployeeThunk,
@@ -13,6 +13,9 @@ import LevelBadge from '../../components/shared/LevelBadge';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
+import DeleteEmployeeModal from './components/DeleteEmployeeModal';
+import AddEmployeeModal from './components/AddEmployeeModal';
+import { canCreateEmployee, canEditEmployee, canDeleteEmployee } from '../../utils/permissions';
 
 const StatusDot = ({ isActive }) => (
   <span className="flex items-center gap-1.5">
@@ -20,134 +23,6 @@ const StatusDot = ({ isActive }) => (
     <span className="text-sm text-gray-600">{isActive ? 'Active' : 'Inactive'}</span>
   </span>
 );
-
-// ── Delete Confirmation Modal ─────────────────────────────────────────────────
-const DeleteEmployeeModal = ({ employee, onClose, onConfirm, isDeleting }) => {
-  const [confirmName, setConfirmName] = useState('');
-  const nameMatches = confirmName.trim().toLowerCase() === (employee?.name || '').trim().toLowerCase();
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 border-b flex items-center gap-3">
-          <div className="p-2 bg-red-100 rounded-full">
-            <Trash2 className="h-5 w-5 text-red-600" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900">Delete Employee?</h3>
-        </div>
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-700">
-            You are about to permanently delete <strong>{employee?.name}</strong>.
-            This action cannot be undone.
-          </p>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800">
-              <strong>Warning:</strong> All associated data including mentor mappings will be removed.
-              MBO form history will be retained for audit purposes.
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type the employee name to confirm:
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
-              value={confirmName}
-              onChange={(e) => setConfirmName(e.target.value)}
-              placeholder={employee?.name}
-              autoFocus
-            />
-          </div>
-        </div>
-        <div className="px-6 py-4 border-t flex justify-end gap-3 bg-gray-50">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isDeleting}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-red-600 hover:bg-red-700 text-white border-red-600"
-            disabled={!nameMatches || isDeleting}
-            isLoading={isDeleting}
-            onClick={() => onConfirm(employee._id)}
-          >
-            Delete Permanently
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Simple Add Employee Modal
-const AddEmployeeModal = ({ onClose, onSave, isSaving }) => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'employee', level: '', department: '' });
-
-  const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Backend validator expects 'password' field, which the service maps to passwordHash
-    const { ...data } = form;
-    onSave(data);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-900">Add New Employee</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name*</label>
-              <input name="name" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.name} onChange={handleChange} placeholder="Jane Smith" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email*</label>
-              <input name="email" type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.email} onChange={handleChange} placeholder="jane@company.com" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Temporary Password*</label>
-            <input name="password" type="password" required minLength={6} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.password} onChange={handleChange} placeholder="Min 6 characters" />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role*</label>
-              <select name="role" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.role} onChange={handleChange}>
-                <option value="employee">Employee</option>
-                <option value="hr">HR</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-              <select name="level" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.level} onChange={handleChange}>
-                <option value="">—</option>
-                <option value="Junior">Junior</option>
-                <option value="Mid">Mid</option>
-                <option value="Senior">Senior</option>
-                <option value="Lead">Lead</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <input name="department" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" value={form.department} onChange={handleChange} placeholder="Engineering" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" isLoading={isSaving}>Create Employee</Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const EmployeeListPage = () => {
   const dispatch = useDispatch();
@@ -160,6 +35,9 @@ const EmployeeListPage = () => {
   const pages = useSelector(selectEmployeePages);
 
   const isAdminOrHr = ['admin', 'hr'].includes(role);
+  const userCanCreate  = canCreateEmployee(role);
+  const userCanEdit    = canEditEmployee(role);
+  const userCanDelete  = canDeleteEmployee(role); // Admin-only — mirrors backend authorize('admin')
 
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
@@ -224,7 +102,7 @@ const EmployeeListPage = () => {
             {isLoading ? 'Loading...' : `${total} organization member${total !== 1 ? 's' : ''}`}
           </p>
         </div>
-        {isAdminOrHr && (
+        {userCanCreate && (
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
             <UserPlus className="h-4 w-4" /> Add Employee
           </Button>
@@ -317,20 +195,25 @@ const EmployeeListPage = () => {
                       {isAdminOrHr && (
                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end gap-2">
-                            <button
-                              className="text-gray-400 hover:text-indigo-600 p-1"
-                              title="Edit"
-                              onClick={() => navigate(`/employees/${emp._id}`)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-gray-400 hover:text-red-600 p-1"
-                              title="Delete"
-                              onClick={(e) => handleDeleteClick(e, emp)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {userCanEdit && (
+                              <button
+                                className="text-gray-400 hover:text-indigo-600 p-1"
+                                title="Edit employee"
+                                onClick={() => navigate(`/employees/${emp._id}`)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            )}
+                            {/* Delete is Admin-only — HR cannot delete employees */}
+                            {userCanDelete && (
+                              <button
+                                className="text-gray-400 hover:text-red-600 p-1"
+                                title="Delete employee (Admin only)"
+                                onClick={(e) => handleDeleteClick(e, emp)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

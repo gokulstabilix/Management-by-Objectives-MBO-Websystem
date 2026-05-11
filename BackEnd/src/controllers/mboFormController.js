@@ -58,6 +58,17 @@ exports.getMenteeForms = catchAsync(async (req, res) => {
   res.status(200).json({ status: 'success', data: { forms } });
 });
 
+/**
+ * GET /mbo/my-mentees
+ * Returns ALL mentees assigned to the logged-in mentor via User.mentorId.
+ * Each item includes the employee data + their latest MBO form (null if none).
+ * This is the source-of-truth for the mentee list — not tied to form existence.
+ */
+exports.getMyMentees = catchAsync(async (req, res) => {
+  const mentees = await mboFormService.getMentees(req.user._id);
+  res.status(200).json({ status: 'success', data: { mentees } });
+});
+
 exports.getMenteeFormDetail = catchAsync(async (req, res) => {
   const form = await mboFormService.getMenteeFormDetail(req.params.formId, req.user._id);
   res.status(200).json({ status: 'success', data: { form } });

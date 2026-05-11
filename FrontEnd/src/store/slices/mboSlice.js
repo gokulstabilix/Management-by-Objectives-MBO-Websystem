@@ -5,7 +5,10 @@ const initialState = {
   // Employee: my own forms
   myForms: [],
   selectedForm: null, // The form currently open in the form builder
-  // Mentor: mentee forms
+  // Mentor: mentee assignment view (source-of-truth — includes mentees without forms)
+  myMentees: [],
+  isLoadingMyMentees: false,
+  // Mentor: mentee forms (legacy review workflow — only mentees with forms)
   menteeForms: [],
   selectedMenteeForm: null,
   // Admin/HR: full list
@@ -131,6 +134,24 @@ export const fetchMenteeFormsThunk = createAsyncThunk(
       return response.data.data.forms;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch mentee forms');
+    }
+  }
+);
+
+/**
+ * fetchMyMenteesThunk
+ * Calls GET /mbo/my-mentees — the new source-of-truth endpoint.
+ * Returns { employee, latestForm | null } for EVERY assigned mentee,
+ * including those who have not yet started an MBO form.
+ */
+export const fetchMyMenteesThunk = createAsyncThunk(
+  'mbo/fetchMyMentees',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/mbo/my-mentees');
+      return response.data.data.mentees;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch mentees');
     }
   }
 );
@@ -330,6 +351,20 @@ const mboSlice = createSlice({
       state.error = action.payload;
     });
 
+    // fetchMyMentees — source-of-truth mentee list
+    builder.addCase(fetchMyMenteesThunk.pending, (state) => {
+      state.isLoadingMyMentees = true;
+      state.error = null;
+    });
+    builder.addCase(fetchMyMenteesThunk.fulfilled, (state, action) => {
+      state.isLoadingMyMentees = false;
+      state.myMentees = action.payload || [];
+    });
+    builder.addCase(fetchMyMenteesThunk.rejected, (state, action) => {
+      state.isLoadingMyMentees = false;
+      state.error = action.payload;
+    });
+
     // fetchMenteeFormDetail
     builder.addCase(fetchMenteeFormDetailThunk.pending, (state) => {
       state.isLoadingForm = true;
@@ -402,6 +437,8 @@ export const { clearMboError, clearSelectedForm, clearSelectedMenteeForm } = mbo
 export const selectMyForms = (state) => state.mbo.myForms;
 export const selectSelectedForm = (state) => state.mbo.selectedForm;
 export const selectMenteeForms = (state) => state.mbo.menteeForms;
+export const selectMyMentees = (state) => state.mbo.myMentees;          // source-of-truth
+export const selectMyMenteesLoading = (state) => state.mbo.isLoadingMyMentees;
 export const selectSelectedMenteeForm = (state) => state.mbo.selectedMenteeForm;
 export const selectAdminForms = (state) => state.mbo.adminForms;
 export const selectAdminFormsTotal = (state) => state.mbo.adminTotal;

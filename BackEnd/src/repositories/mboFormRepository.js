@@ -61,6 +61,48 @@ class MboFormRepository {
     return MboForm.countDocuments(filter);
   }
 
+  /**
+   * For a given list of mentee IDs, returns the single most-recent MBO form
+   * per employee. Uses aggregation sort+group to pick the latest form.
+   * Employees with no form are NOT in the result — the service layer handles
+   * the merge so they appear as { latestForm: null }.
+   */
+  async findLatestPerEmployee(menteeIds) {
+    const mongoose = require('mongoose');
+    const objectIds = menteeIds.map((id) =>
+      typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id
+    );
+
+    const pipeline = [
+      { $match: { employeeId: { $in: objectIds } } },
+      { $sort: { updatedAt: -1 } },
+      {
+        $group: {
+          _id: '$employeeId',
+          formId: { $first: '$_id' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'mboforms',
+          localField: 'formId',
+          foreignField: '_id',
+          as: 'form',
+        },
+      },
+      { $unwind: '$form' },
+      { $replaceRoot: { newRoot: '$form' } },
+    ];
+
+    const rawForms = await MboForm.aggregate(pipeline);
+
+    // Populate references after aggregation
+    return MboForm.populate(rawForms, [
+      { path: 'employeeId', select: 'name email level department' },
+      { path: 'quarterId', select: 'label status' },
+    ]);
+  }
+
   async updateById(id, data) {
     return MboForm.findByIdAndUpdate(id, data, {
       new: true,

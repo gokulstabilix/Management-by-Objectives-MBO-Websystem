@@ -39,6 +39,12 @@ router.patch('/:id/final-review', authorize('employee'), checkMentorP2Fields, va
 
 // ── Employee read routes ──
 router.get('/my', authorize('employee'), mboFormController.getMyForms);
+/**
+ * GET /mbo/my-mentees
+ * Source-of-truth mentee list: driven by mentor assignment (User.mentorId),
+ * NOT by MBO form existence. Employees without a form are included with latestForm: null.
+ */
+router.get('/my-mentees', authorize('employee'), mboFormController.getMyMentees);
 router.get('/mentees', authorize('employee'), mboFormController.getMenteeForms);
 router.get('/mentees/:formId', authorize('employee'), mboFormController.getMenteeFormDetail);
 

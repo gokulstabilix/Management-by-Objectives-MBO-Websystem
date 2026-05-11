@@ -233,11 +233,56 @@ class MboFormService {
     return form;
   }
 
-  /** Mentor's mentee forms. */
+  /**
+   * Returns MBO forms for a mentor's mentees.
+   * Only returns mentees who have at least one MBO form (legacy behavior for
+   * the review workflow — form detail requires a form to exist).
+   */
   async getMenteeForms(mentorId) {
     const mentees = await userRepository.findMentees(mentorId);
     const menteeIds = mentees.map((m) => m._id);
+    if (menteeIds.length === 0) return [];
     return mboFormRepository.findByMentees(menteeIds);
+  }
+
+  /**
+   * Returns ALL mentees assigned to this mentor, regardless of whether they
+   * have submitted an MBO form yet.
+   *
+   * Each item in the response has shape:
+   *   { employee: { _id, name, email, level, department }, latestForm: <MboForm|null> }
+   *
+   * This is the source-of-truth view driven by mentor assignment (User.mentorId),
+   * NOT by MBO form existence.
+   */
+  async getMentees(mentorId) {
+    // 1. Fetch all active users assigned to this mentor
+    const mentees = await userRepository.findMentees(mentorId);
+    if (mentees.length === 0) return [];
+
+    const menteeIds = mentees.map((m) => m._id);
+
+    // 2. Fetch latest form per mentee using aggregation (LEFT JOIN equivalent)
+    const latestForms = await mboFormRepository.findLatestPerEmployee(menteeIds);
+
+    // Build a lookup map: employeeId (string) → form
+    const formByEmployee = {};
+    for (const form of latestForms) {
+      const key = (form.employeeId?._id || form.employeeId).toString();
+      formByEmployee[key] = form;
+    }
+
+    // 3. Merge: every mentee gets their form (or null)
+    return mentees.map((mentee) => ({
+      employee: {
+        _id: mentee._id,
+        name: mentee.name,
+        email: mentee.email,
+        level: mentee.level,
+        department: mentee.department,
+      },
+      latestForm: formByEmployee[mentee._id.toString()] || null,
+    }));
   }
 
   /** Mentor reads a specific mentee form. */

@@ -1,21 +1,22 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import PrivateRoute from './PrivateRoute';
 import RoleRoute from './RoleRoute';
 import AppShell from '../components/layout/AppShell';
 
-import LoginPage from '../pages/auth/LoginPage';
-import DashboardPage from '../pages/dashboard/DashboardPage';
-import EmployeeListPage from '../pages/employees/EmployeeListPage';
-import EmployeeProfilePage from '../pages/employees/EmployeeProfilePage';
-import MentorMapPage from '../pages/mentor-map/MentorMapPage';
-import MboListPage from '../pages/mbo/MboListPage';
-import MboFormPage from '../pages/mbo/MboFormPage';
-import QuartersPage from '../pages/quarters/QuartersPage';
-import MenteesListPage from '../pages/mentees/MenteesListPage';
-import MenteeReviewPage from '../pages/mentees/MenteeReviewPage';
-import ManageHRPage from '../pages/admin/ManageHRPage';
-import NotificationsPage from '../pages/notifications/NotificationsPage';
-import ProfilePage from '../pages/auth/ProfilePage';
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
+const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage'));
+const EmployeeListPage = lazy(() => import('../pages/employees/EmployeeListPage'));
+const EmployeeProfilePage = lazy(() => import('../pages/employees/EmployeeProfilePage'));
+const MentorMapPage = lazy(() => import('../pages/mentor-map/MentorMapPage'));
+const MboListPage = lazy(() => import('../pages/mbo/MboListPage'));
+const MboFormPage = lazy(() => import('../pages/mbo/MboFormPage'));
+const QuartersPage = lazy(() => import('../pages/quarters/QuartersPage'));
+const MenteesListPage = lazy(() => import('../pages/mentees/MenteesListPage'));
+const MenteeReviewPage = lazy(() => import('../pages/mentees/MenteeReviewPage'));
+const ManageHRPage = lazy(() => import('../pages/admin/ManageHRPage'));
+const NotificationsPage = lazy(() => import('../pages/notifications/NotificationsPage'));
+const ProfilePage = lazy(() => import('../pages/auth/ProfilePage'));
 
 export const router = createBrowserRouter([
   {
