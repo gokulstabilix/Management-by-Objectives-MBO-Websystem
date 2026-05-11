@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import StatusBadge from '../../components/shared/StatusBadge';
 import LevelBadge from '../../components/shared/LevelBadge';
 import Button from '../../components/ui/Button';
+import { MBO_STATUSES } from '../../constants/mboStatuses';
 import toast from 'react-hot-toast';
 
 const fmt = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -23,7 +24,9 @@ const AdminDashboard = () => {
   const isSubmitting = useSelector(selectQuartersSubmitting);
   const isMboLoading = useSelector(selectMboLoading);
 
-  const pendingCount = adminForms.filter(f => f.status === 'submitted').length;
+  const pendingCount = adminForms.filter(f =>
+    f.status === MBO_STATUSES.SUBMITTED || f.status === MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED
+  ).length;
 
   useEffect(() => {
     dispatch(fetchAdminFormsThunk({ limit: 10 }));

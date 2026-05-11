@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import StatusBadge from '../../components/shared/StatusBadge';
 import LevelBadge from '../../components/shared/LevelBadge';
 import Button from '../../components/ui/Button';
+import { MBO_STATUSES } from '../../constants/mboStatuses';
 
 const fmt = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
@@ -31,7 +32,9 @@ const HrDashboard = () => {
   }, [dispatch]);
 
   const unmappedCount = mappings.filter(m => m.role === 'employee' && !m.mentorId).length;
-  const submittedCount = adminForms.filter(f => f.status === 'submitted').length;
+  const submittedCount = adminForms.filter(f =>
+    f.status === MBO_STATUSES.SUBMITTED || f.status === MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED
+  ).length;
 
   const stats = [
     {

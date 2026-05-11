@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import StatusBadge from '../../components/shared/StatusBadge';
 import LevelBadge from '../../components/shared/LevelBadge';
 import Button from '../../components/ui/Button';
+import { MBO_STATUSES } from '../../constants/mboStatuses';
 
 const EmployeeDashboard = () => {
   const dispatch = useDispatch();
@@ -31,7 +32,9 @@ const EmployeeDashboard = () => {
   );
   const mboStatus = currentForm?.status || null;
 
-  const pendingReviews = menteeForms.filter(f => f.status === 'submitted').length;
+  const pendingReviews = menteeForms.filter(f =>
+    f.status === MBO_STATUSES.SUBMITTED || f.status === MBO_STATUSES.ACCOMPLISHMENT_SUBMITTED
+  ).length;
   const isMentor = menteeForms.length > 0 || user.menteeCount > 0;
 
   const mentorComment = currentForm?.mentorReview?.comment;
