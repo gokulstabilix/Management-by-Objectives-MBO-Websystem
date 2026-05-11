@@ -63,6 +63,12 @@ class AuthService {
     }
 
     const accessToken = signAccessToken(user._id, user.role);
+    
+    // Implement stateless refresh token rotation (sliding session)
+    // Issuing a new refresh token with each request extends the session dynamically
+    const newRefreshToken = signRefreshToken(user._id);
+    setRefreshCookie(res, newRefreshToken);
+
     const userObj = user.toJSON();
     return { accessToken, user: userObj };
   }

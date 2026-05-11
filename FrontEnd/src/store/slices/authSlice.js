@@ -6,6 +6,7 @@ const initialState = {
   user: null, // { id, name, email, role, level, mentorId, isActive, department }
   accessToken: null,
   isAuthenticated: false,
+  isInitialized: false, // Prevents rendering until initial auth check finishes
   isLoading: false,
   error: null,
 };
@@ -92,11 +93,13 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken || action.payload.token;
       state.isAuthenticated = true;
+      state.isInitialized = true;
     });
     builder.addCase(refreshTokenThunk.rejected, (state) => {
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.isInitialized = true;
     });
 
     // Logout
@@ -118,6 +121,7 @@ export const selectUserRole = (state) => state.auth.user?.role;
 export const selectUserMentorId = (state) => state.auth.user?.mentorId;
 export const selectUserLevel = (state) => state.auth.user?.level;
 export const selectIsLoading = (state) => state.auth.isLoading;
+export const selectIsInitialized = (state) => state.auth.isInitialized;
 export const selectAuthError = (state) => state.auth.error;
 
 export default authSlice.reducer;
